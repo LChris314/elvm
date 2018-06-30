@@ -100,11 +100,13 @@ ELC_SRCS := \
 	forth.c \
 	fs.c \
 	go.c \
+	hs.c \
 	i.c \
 	java.c \
 	js.c \
 	lua.c \
 	ll.c \
+	oct.c \
 	php.c \
 	piet.c \
 	pietasm.c \
@@ -115,12 +117,15 @@ ELC_SRCS := \
 	sed.c \
 	sh.c \
 	sqlite3.c \
+	scala.c \
+	scm_sr.c \
 	swift.c \
 	tex.c \
 	tf.c \
 	tm.c \
 	unl.c \
 	vim.c \
+	wasm.c \
 	ws.c \
 	x86.c \
 
@@ -257,6 +262,11 @@ TARGET := asmjs
 RUNNER := nodejs
 include target.mk
 
+TARGET := wasm
+RUNNER := tools/runwasm.sh
+TOOL := wat2wasm
+include target.mk
+
 TARGET := php
 RUNNER := php
 include target.mk
@@ -303,6 +313,12 @@ RUNNER := tools/runjava.sh
 TOOL := javac
 include target.mk
 $(OUT.eir.java.out): tools/runjava.sh
+
+TARGET := scala
+RUNNER := tools/runscala.sh
+TOOL := scalac
+include target.mk
+$(OUT.eir.scala.out): tools/runscala.sh
 
 TARGET := swift
 RUNNER := tools/runswift.sh
@@ -437,6 +453,21 @@ include target.mk
 
 TARGET := ll
 RUNNER := lli
+include target.mk
+
+TARGET := scm_sr
+RUNNER := tools/runscm_sr.sh
+TOOL := gosh
+include target.mk
+
+TARGET := hs
+RUNNER := tools/runhs.sh
+TOOL := ghc
+include target.mk
+$(OUT.eir.hs.out): tools/runhs.sh
+
+TARGET := oct
+RUNNER := octave -q
 include target.mk
 
 test: $(TEST_RESULTS)

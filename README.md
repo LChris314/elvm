@@ -13,7 +13,7 @@ Unlike LLVM bitcode, EIR is designed to be extremely simple, so
 there's more chance we can write a translator from EIR to an esoteric
 language.
 
-Currently, there are 33 backends:
+Currently, there are 37 backends:
 
 * Bash
 * Befunge
@@ -31,13 +31,15 @@ Currently, there are 33 backends:
 * Go (by [@shogo82148](https://github.com/shogo82148/))
 * Java
 * JavaScript
-* LLVM IR (by [@retrage](https://github.com/@retrage/))
-* Lua (by [@retrage](https://github.com/@retrage/))
+* LLVM IR (by [@retrage](https://github.com/retrage/))
+* Lua (by [@retrage](https://github.com/retrage/))
+* Octave (by [@inaniwa3](https://github.com/inaniwa3/))
 * Perl5 (by [@mackee](https://github.com/mackee/))
 * PHP (by [@zonuexe](https://github.com/zonuexe/))
 * Piet
 * Python
 * Ruby
+* Scheme syntax-rules (by [@zeptometer](https://github.com/zeptometer/))
 * SQLite3 (by [@youz](https://github.com/youz/))
 * Swift (by [@kwakasa](https://github.com/kwakasa/))
 * TeX (by [@hak7a3](https://github.com/hak7a3/))
@@ -45,6 +47,7 @@ Currently, there are 33 backends:
 * Turing machine (by [@ND-CSE-30151](https://github.com/ND-CSE-30151/))
 * Unlambda (by [@irori](https://github.com/irori/))
 * Vim script (by [@rhysd](https://github.com/rhysd/))
+* WebAssembly (by [@dubek](https://github.com/dubek/))
 * Whitespace
 * arm-linux (by [@irori](https://github.com/irori/))
 * i386-linux
@@ -133,11 +136,11 @@ to specify `-b' flag.
 
 ### Unlambda
 
-This backend was contributed by [@irori](https://github.com/irori/). This backend is even slower
-than Brainfuck. See also [8cc.unl](https://github.com/irori/8cc.unl).
+This backend was contributed by [@irori](https://github.com/irori/).
+See also [8cc.unl](https://github.com/irori/8cc.unl).
 
-This backend is tested with [Emil Jeřábek's
-interpreter](http://users.math.cas.cz/~jerabek/unlambda/unl.c). tools/rununl.sh
+This backend is tested with [@irori's
+interpreter](https://github.com/irori/unlambda). tools/rununl.sh
 automatically downloads it.
 
 ### C-INTERCAL
@@ -259,8 +262,7 @@ TODO: Reduce the size of the graph and run 8cc
 
 I'm interested in
 
-* adding more backends (e.g., WebAssembly, 16bit CPU, Malbolge
-  Unshackled, ...)
+* adding more backends (e.g., 16bit CPU, Malbolge Unshackled, ...)
 * running more programs (e.g., lua.bf or mruby.bf?)
 * supporting more C features (e.g., bit operations)
 * eliminating unnecessary code in 8cc

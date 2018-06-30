@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include <ir/ir.h>
 #include <target/util.h>
 
@@ -6,6 +8,7 @@ static void init_state_tf(Data* data) {
   emit_line("import tensorflow as tf");
   emit_line("from tensorflow.python.framework import function");
   emit_line("from tensorflow.python.framework import tensor_shape");
+  emit_line("from tensorflow.python.ops import inplace_ops");
   emit_line("");
 
   for (int i = 0; i < 7; i++) {
@@ -18,12 +21,12 @@ static void init_state_tf(Data* data) {
   for (int mp = 0; data; data = data->next, mp++) {
     emit_line("data.append(%d)", data->v);
   }
-  emit_line("mem = tf.concat(0, [data, "
-            "tf.zeros([(1<<24)-len(data)], dtype=tf.int32, name='mem')])");
+  emit_line("mem = tf.concat([data, "
+            "tf.zeros([(1<<24)-len(data)], dtype=tf.int32)], 0, name='mem')");
   emit_line("done = tf.constant(0, name='done')");
   emit_line("out = tf.constant('', name='out')");
-  emit_line("CHAR_TBL = tf.constant([chr(i) for i in xrange(256)])");
-  emit_line("input = map(ord, sys.stdin.read())");
+  emit_line("CHAR_TBL = tf.constant([chr(i) for i in range(256)])");
+  emit_line("input = list(map(ord, sys.stdin.read()))");
   emit_line("INPUT_LEN = len(input)");
   emit_line("INPUT = tf.placeholder("
             "shape=[INPUT_LEN], dtype=tf.int32)");
@@ -48,10 +51,6 @@ static void init_state_tf(Data* data) {
   emit_line("@function.Defun(tf.int32, tf.int32)");
   emit_line("def elvm_sub(x, y):");
   emit_line("  return (x - y + 16777216) %% 16777216");
-  emit_line("");
-  emit_line("@function.Defun(tf.int32, tf.int32, tf.int32)");
-  emit_line("def elvm_store(mem, x, y):");
-  emit_line("  return tf.concat(0, [mem[:y], [x], mem[y+1:]])");
 }
 
 static const char* tf_value_str(Value* v) {
@@ -105,8 +104,8 @@ static void tf_emit_inst(Inst* inst) {
     break;
 
   case STORE:
-    emit_line("mem = elvm_store(mem, %s, %s)",
-              reg_names[inst->dst.reg], tf_src_str(inst));
+    emit_line("mem = inplace_ops.inplace_update(mem, %s, %s)",
+              tf_src_str(inst), reg_names[inst->dst.reg]);
     break;
 
   case PUTC:
@@ -162,6 +161,22 @@ static void tf_emit_func_epilogue(const char* args) {
   dec_indent();
 }
 
+static void tf_emit_pc_dispatch(int min_pc, int max_pc,
+                                const char* state_args_str) {
+  assert(min_pc <= max_pc);
+  if (min_pc == max_pc) {
+    emit_line("lambda: pc_%d(%s),", min_pc, state_args_str);
+    return;
+  }
+  int mid_pc = (min_pc + max_pc) / 2;
+  emit_line("lambda: tf.cond(tf.less(pc, %d),", mid_pc + 1);
+  inc_indent();
+  tf_emit_pc_dispatch(min_pc, mid_pc, state_args_str);
+  tf_emit_pc_dispatch(mid_pc + 1, max_pc, state_args_str);
+  emit_line("),", mid_pc + 1);
+  dec_indent();
+}
+
 void target_tf(Module* module) {
   init_state_tf(module->data);
 
@@ -185,14 +200,12 @@ void target_tf(Module* module) {
   emit_line("");
   emit_line("def run_step(%s):", STATE_ARGS_STR);
   inc_indent();
-  //emit_line("pc = tf.Print(pc, [pc])");
-  emit_line("fn_pairs = []");
-  for (int i = 0; i < prev_pc; i++) {
-    emit_line("fn_pairs.append((tf.equal(pc, %d), lambda: pc_%d(%s)))",
-              i, i, STATE_ARGS_STR);
-  }
-  emit_line("r = tf.case(fn_pairs, lambda: pc_%d(%s))",
-            prev_pc, STATE_ARGS_STR);
+  emit_line("r = (");
+  inc_indent();
+  tf_emit_pc_dispatch(0, prev_pc, STATE_ARGS_STR);
+  dec_indent();
+  emit_line(")");
+  emit_line("r = r[0]()");
   emit_line("r[8].set_shape([1<<24])");
   emit_line("return r");
   dec_indent();
@@ -209,7 +222,7 @@ void target_tf(Module* module) {
   emit_line("sess = tf.Session()");
   emit_line("tf.train.write_graph(loop[9].graph.as_graph_def(),"
             " '/tmp', 'graph.pbtxt')");
-  emit_line("tf.initialize_all_variables().run(session=sess)");
+  emit_line("sess.run(tf.global_variables_initializer())");
   emit_line("r = sess.run(loop, feed_dict={INPUT: input})");
 
   emit_line("");
